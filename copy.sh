@@ -1,0 +1,1 @@
+scp -i singapore.pem CS420.jar ec2-user@54.179.22.169:
