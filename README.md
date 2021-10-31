@@ -30,7 +30,7 @@ bash build_and_run.sh
 
 ### Local GUI address: [127.0.0.1:9090/html/bot.html](http://127.0.0.1:9090/html/bot.html) (Visual Studio Live Server)
 
-### Remote Bot address: [54.179.22.169:4000](http://54.179.22.169:8080/bot.html)
+### Remote GUI address: [54.179.22.169:4000](http://54.179.22.169:8080/bot.html)
 
 ## Notes
 - Yes, I know I should not have included the identity file in this repository. (Easier for demonstration).
