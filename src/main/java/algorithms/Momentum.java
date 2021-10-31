@@ -9,6 +9,16 @@ public class Momentum extends Algorithm {
 
     private double delta, bound, tpsl, velocity;
 
+    private class ContinuousPrice {
+        double price;
+        long timestamp;
+
+        public ContinuousPrice(double price, long timestamp) {
+            this.price = price;
+            this.timestamp = timestamp;
+        }
+    }
+
     LinkedList<ContinuousPrice> continuousPrices; // contain all prices from price delta ms ago to now
 
     public Momentum(int delta, double bound, double tpsl) {
@@ -20,8 +30,8 @@ public class Momentum extends Algorithm {
     }
 
     @Override
-    public void onIncrementalUpdate() {
-        addPricePoint();
+    public void initialize() {
+        return;
     }
 
     @Override
@@ -31,8 +41,8 @@ public class Momentum extends Algorithm {
     }
 
     @Override
-    public void initialize() {
-        return;
+    public void onIncrementalUpdate() {
+        addPricePoint();
     }
 
     public void addPricePoint() {
@@ -52,33 +62,23 @@ public class Momentum extends Algorithm {
 
         velocity = (price.price - continuousPrices.getLast().price) / (delta) * 1000; // $/s
 
-        if (!inPosition && velocity > bound) {
-            PhemexAPI.sendOrder("Buy", 1, lastPrice*(1+tpsl), lastPrice * (1 - tpsl));
-        }
+        if (!Algorithm.inPosition() && velocity > bound) {
+            PhemexAPI.sendOrder("Buy", 1, tpsl);
+            Algorithm.size = 1;
 
-        else if (!inPosition && velocity < -bound) {
-            PhemexAPI.sendOrder("Sell", 1, lastPrice * (1 - tpsl), lastPrice * (1 + tpsl));
-        }
-    }
-
-    private class ContinuousPrice {
-        double price;
-        long timestamp;
-
-        public ContinuousPrice(double price, long timestamp) {
-            this.price = price;
-            this.timestamp = timestamp;
+        } else if (!Algorithm.inPosition() && velocity < -bound) {
+            PhemexAPI.sendOrder("Sell", 1, tpsl);
+            Algorithm.size = 1;
         }
     }
 
     @Override
-    public JSONObject getAlgorithm() {
+    public JSONObject getParametersString() {
         JSONObject info = new JSONObject();
         info.put("name", name);
-        info.put("details_string", "- Delta:  " + delta + "ms\n- Bound: " + bound + " ($/second)\n- TP/SL:  " + tpsl + "%");
+        info.put("details_string", "- Velocity:  " + Math.round(velocity * 100) / 100.0 + " ($/second)\n- Delta:  " + delta + "ms\n- Bound: "
+                + bound * 100 + " ($/second)\n- TP/SL:  " + tpsl * 100 + "%");
         return info;
     }
-
-
 
 }

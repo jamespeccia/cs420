@@ -1,7 +1,8 @@
-let address = 'localhost:3000';
+let address = 'localhost:4000';
 document.getElementById('address_url').value = address;
 
 let lastPrice = 0;
+let inPosition = false;
 function update() {
 	fetch('http://' + address + '/getInfo')
 		.then((res) => res.json())
@@ -18,12 +19,12 @@ function update() {
 			}
 			lastPrice = res.price;
 
-			if(algorithm.name)
-				document.getElementById('algorithm').innerText = 'Algorithm: ' + algorithm.name
-			else
-				document.getElementById('algorithm').innerText = 'Algorithm: Not Selected';
-			
+			if (algorithm.name) document.getElementById('algorithm').innerText = 'Algorithm: ' + algorithm.name;
+			else document.getElementById('algorithm').innerText = 'Algorithm: Not Selected';
+
 			document.getElementById('position').innerText = 'Position: ' + res.position;
+
+			res.position === 'NA' ? (inPosition = false) : (inPosition = true);
 
 			let roi = res.roi;
 			document.getElementById('roi').innerText = roi + '%';
@@ -41,7 +42,7 @@ function update() {
 				document.getElementById('details').innerText = res.algorithm.details_string;
 				document.getElementById('details').style.display = 'initial';
 			} else {
-				document.getElementById('details').style.display = "none"
+				document.getElementById('details').style.display = 'none';
 			}
 		})
 		.catch((error) => {
@@ -65,24 +66,35 @@ function onSelect(e) {
 	e.preventDefault();
 	let strategy = e.target.id;
 
-	data = { "algorithm": strategy };
+	let data = { algorithm: strategy };
 	if (strategy === 'momentum') {
 		data.delta = document.getElementById('delta').value;
-		data.threshold = document.getElementById('threshold').value;
+		data.bound = document.getElementById('bound_mom').value;
+		data.tpsl = document.getElementById('tpsl_mom').value;
+	} else if (strategy == 'meanreversion') {
+		data.length = document.getElementById('length').value;
+		data.bound = document.getElementById('bound_mean').value;
+		data.tpsl = document.getElementById('tpsl_mean').value;
 	}
 
-	console.log(data)
-	// else if (strategy == 'meanreversion') {
-	// 	data.delta = document.getElementById('length').innerText;
-	// 	data.threshold = document.getElementById('percent').innerText;
-	// }
-
-	fetch('http://' + address + '/strategy', {
-		method: 'POST',
-		body: JSON.stringify(data)
-	})
-		.then((res) => res.text())
-		.then((res) => alert(res));
+	if (
+		inPosition &&
+		confirm('You are currently in a position. Setting a new algorithm will exit position at best price. Would you like to continue?')
+	) {
+		fetch('http://' + address + '/strategy', {
+			method: 'POST',
+			body: JSON.stringify(data)
+		})
+			.then((res) => res.text())
+			.then((res) => alert(res));
+	} else if (!inPosition) {
+		fetch('http://' + address + '/strategy', {
+			method: 'POST',
+			body: JSON.stringify(data)
+		})
+			.then((res) => res.text())
+			.then((res) => alert(res));
+	}
 }
 
 let form = document.getElementById('form');

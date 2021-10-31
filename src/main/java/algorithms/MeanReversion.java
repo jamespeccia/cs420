@@ -7,13 +7,13 @@ import org.json.JSONObject;
 public class MeanReversion extends Algorithm {
 
     private int length;
-    private double percent, tpsl, movingAverage, sum;
+    private double bound, tpsl, movingAverage, sum;
     private Candle currentCandle;
     private double lastCandlePrice;
 
-    public MeanReversion(int length, double percent, double tpsl) {
+    public MeanReversion(int length, double bound, double tpsl) {
         this.length = length > 1000 ? 1000 : length;
-        this.percent = percent;
+        this.bound = bound;
         this.tpsl = tpsl;
         this.movingAverage = 0;
         this.currentCandle = candles.getFirst();
@@ -49,10 +49,14 @@ public class MeanReversion extends Algorithm {
         lastCandlePrice = currentCandle.close;
         this.movingAverage = sum / length;
 
-        if (!inPosition && lastPrice > movingAverage * (1 + percent)) { // Price is above the average, should come down
-            PhemexAPI.sendOrder("Sell", 1, (1 - tpsl), lastPrice * (1 + tpsl));
-        } else if (!inPosition && lastPrice < movingAverage * (1 - percent)) { // Price is below average, should go up
-            PhemexAPI.sendOrder("Buy", 1, (1 + tpsl), lastPrice * (1 - tpsl));
+        if (!Algorithm.inPosition() && lastPrice > movingAverage * (1 + bound)) { // Price is above the average, should
+                                                                                  // come down
+            PhemexAPI.sendOrder("Sell", 1, tpsl);
+            Algorithm.size = 1;
+        } else if (!Algorithm.inPosition() && lastPrice < movingAverage * (1 - bound)) { // Price is below average,
+                                                                                         // should go up
+            PhemexAPI.sendOrder("Buy", 1, tpsl);
+            Algorithm.size = 1;
         }
     }
 
@@ -61,13 +65,11 @@ public class MeanReversion extends Algorithm {
         initialize();
     }
 
-
-    public JSONObject getAlgorithm() {
+    public JSONObject getParametersString() {
         JSONObject info = new JSONObject();
-        info.put("Name", name);
-        info.put("Length", length);
-        info.put("Percent", percent);
-        info.put("TPSL", tpsl);
+        info.put("name", name);
+        info.put("details_string", "- Moving Price:  $" + Math.round(movingAverage*100)/100.0 + "\n- Length:  " + length
+                + " minutes\n- Bound: " + bound * 100 + "%\n- TP/SL:  " + tpsl * 100 + "%");
         return info;
     }
 

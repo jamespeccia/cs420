@@ -8,10 +8,15 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
+
+import algorithms.Algorithm;
 
 public class PhemexAPI {
 
@@ -20,10 +25,28 @@ public class PhemexAPI {
     public static final String BASE_ENDPOINT = "testnet-api.phemex.com";
 
     // Places a market order
-    public static void sendOrder(String orderSide, int orderQuantity, double takeProfit, double stopLoss) {
+    public static void sendOrder(String orderSide, int orderQuantity, double tpsl) {
 
-        String body = "{\"clOrdID\":\"" + API_KEY + "\"," + "\"ordType\":\"Market\"," + "\"orderQty\":" + orderQuantity
-                + "," + "\"side\":\"" + orderSide + "\"," + "\"symbol\":\"BTCUSD\"}";
+        JSONObject body = new JSONObject();
+
+        body.put("clOrdID", API_KEY);
+        body.put("ordType", "Market");
+        body.put("orderQty", orderQuantity);
+        body.put("side", orderSide);
+        body.put("symbol", "BTCUSD");
+
+        if (tpsl > 0) {
+
+            double lastPrice = Algorithm.getLastPrice();
+
+            double tpEp = orderSide.equals("Buy") ? Math.round((1 + tpsl) * lastPrice)* 10000
+                    : Math.round((1 - tpsl) * lastPrice) * 10000;
+            double slEp = orderSide.equals("Buy") ? Math.round((1 - tpsl) * lastPrice) * 10000
+                    : Math.round((1 + tpsl) * lastPrice) * 10000;
+            
+            body.put("takeProfitEp", tpEp);
+            body.put("stopLossEp", slEp);
+        }
 
         String URL = "https://" + BASE_ENDPOINT + "/orders";
 
@@ -31,11 +54,8 @@ public class PhemexAPI {
 
         String signature = null;
         try {
-            signature = sign("/orders" + expiry + body, SECRET);
+            signature = sign("/orders" + expiry + body.toString(), SECRET);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            // Logger.log("An error was thrown while signing a Phemex API request. Order was
-            // never placed. ("
-            // + e.toString() + ")");
             System.err.println(e.toString());
             return;
         }
@@ -45,15 +65,14 @@ public class PhemexAPI {
         httpPost.setHeader("x-phemex-access-token", API_KEY);
         httpPost.setHeader("x-phemex-request-expiry", expiry);
         httpPost.setHeader("x-phemex-request-signature", signature);
-        httpPost.setEntity(new StringEntity(body, "UTF-8"));
+        httpPost.setEntity(new StringEntity(body.toString(), "UTF-8"));
 
         HttpClient httpClient = HttpClients.createMinimal();
 
-        // HttpResponse httpResponse = null;
+        HttpResponse httpResponse = null;
         try {
-            httpClient.execute(httpPost);
-            // httpResponse = httpClient.execute(httpPost);
-            //System.out.println(EntityUtils.toString(httpResponse.getEntity(), "UTF-8"));
+            httpResponse = httpClient.execute(httpPost);
+            // System.out.println(EntityUtils.toString(httpResponse.getEntity(), "UTF-8"));
         } catch (IOException e) {
             System.err.println("Error sending order!");
         }
