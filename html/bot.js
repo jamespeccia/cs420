@@ -1,4 +1,4 @@
-let address = 'localhost:4000';
+let address = '54.179.22.169:4000';
 document.getElementById('address_url').value = address;
 
 let lastPrice = 0;

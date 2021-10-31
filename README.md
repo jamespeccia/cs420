@@ -24,9 +24,9 @@ bash run.sh
 bash build_and_run.sh
 ```
 
-### Local Bot address: [localhost:4000](localhost:4000)
+### Local Bot address: [localhost:4000](http://localhost:4000)
 
-### Remote Bot address: [54.179.22.169:4000](54.179.22.169:4000)
+### Remote Bot address: [54.179.22.169:4000](http://54.179.22.169:4000)
 
 ### Local GUI address: [127.0.0.1:9090/html/bot.html](http://127.0.0.1:9090/html/bot.html) (Visual Studio Live Server)
 
